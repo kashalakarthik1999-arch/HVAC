@@ -1,0 +1,74 @@
+
+{
+  "fields": [
+    {
+      "name": "claim_number",
+      "patterns": [
+        "\\bClaim\\s*(?:Number|No\\.?|#)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "hvaci_file_number",
+      "patterns": [
+        "\\bHVACi\\s*(?:File\\s*)?(?:Number|No\\.?|#)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "report_date",
+      "patterns": [
+        "\\bReport\\s*Date\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})"
+      ]
+    },
+    {
+      "name": "manufacturer",
+      "patterns": [
+        "\\bManufacturer\\s*:?\\s*([^\\r\\n]+)",
+        "\\bBrand\\s*:?\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "equipment_model",
+      "patterns": [
+        "\\b(?:Equipment\\s*Model|Model\\s*Number|Model\\s*No\\.?|Model\\s*#)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "model_year",
+      "patterns": [
+        "\\b(?:Approx(?:imate)?\\.?\\s*)?(?:Model\\s*)?Year\\s*:?\\s*((?:19|20)\\d{2})"
+      ]
+    },
+    {
+      "name": "cause_of_loss",
+      "patterns": [
+        "\\bCause\\s*of\\s*Loss\\s*:?\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "repair_recommendation",
+      "patterns": [
+        "\\b(?:Repair\\s*Recommendation|Recommended\\s*Repair|Recommendation)\\s*:?\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "total_repair_cost",
+      "patterns": [
+        "\\bTotal\\s*Recommended\\s*Repair\\s*Cost\\s*:?\\s*\\$?\\s*([\\d,]+\\.\\d{2})",
+        "\\bTotal\\s*Repair\\s*Cost\\s*:?\\s*\\$?\\s*([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "depreciation",
+      "patterns": [
+        "\\bDepreciation\\s*:?\\s*\\$?\\s*([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "recommended_acv",
+      "patterns": [
+        "\\bRecommended\\s*ACV\\s*:?\\s*\\$?\\s*([\\d,]+\\.\\d{2})",
+        "\\bActual\\s*Cash\\s*Value\\s*:?\\s*\\$?\\s*([\\d,]+\\.\\d{2})"
+      ]
+    }
+  ]
+}
