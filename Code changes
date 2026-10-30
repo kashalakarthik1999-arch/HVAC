@@ -1,4 +1,12 @@
+normalized_text = re.sub(r"\s+", " ", full_text)
 
+test = re.search(
+    r"Date\s+of\s+Manufacture\s*:?\s*((?:19|20)\d{2})",
+    normalized_text,
+    flags=re.IGNORECASE
+)
+
+print("Manufacture match:", test.group(1) if test else None)
 {
   "name": "equipment_year",
   "patterns": [
