@@ -1,19 +1,15 @@
+# DEBUG: Search for insured cause-of-loss information
 
-{
-  "name": "insured_stated_cause_of_loss",
-  "patterns": [
-    "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:\\s*(Unknown|Lightning|Wind|Hail|Wear\\s+and\\s+Tear|Power\\s+Surge|High\\s+Voltage\\s+Surge)",
-    "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:\\s*([^\\r\\n]+)"
-  ]
-}
+print("\n--- DEBUG: CAUSE OF LOSS ---")
 
-print("\n--- DEBUG: CLAIM INFORMATION ---")
+for record in page_records:
 
-pos = full_text.lower().find("stated")
+    page_text = record["text"]
 
-if pos != -1:
-    print(repr(full_text[max(0, pos - 100):pos + 350]))
-else:
-    print("The word 'Stated' was not found.")
+    if any(word in page_text.lower()
+           for word in ["insured", "cause", "unknown", "stated"]):
 
-print("--- END DEBUG ---\n")
+        print(f"\nPAGE NUMBER: {record['page_number']}")
+        print(repr(page_text[:2000]))
+
+print("\n--- END DEBUG ---\n")
