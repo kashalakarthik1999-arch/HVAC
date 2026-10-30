@@ -1,3 +1,15 @@
+
+
+{
+  "name": "insured_stated_cause_of_loss",
+  "patterns": [
+    "Insured['’]?s\\s+Stated\\s+(?:Cause\\s+of\\s+Loss\\s*)?:?\\s*(Unknown|Lightning|Wind|Hail|Wear\\s+and\\s+Tear|Power\\s+Surge|High\\s+Voltage\\s+Surge)",
+    "Insured['’]?s\\s+Stated\\s+(?:Cause\\s+of\\s+Loss\\s*)?:?\\s*([^\\r\\n]+)"
+  ]
+}
+
+
+
 # DEBUG: Search for insured cause-of-loss information
 
 print("\n--- DEBUG: CAUSE OF LOSS ---")
