@@ -1,4 +1,9 @@
-
+{
+  "name": "insured_stated_cause_of_loss",
+  "patterns": [
+    "Insured'?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:?\\s*([^\\r\\n]+)"
+  ]
+}
 
 def extract_field(field_config, full_text):
 
