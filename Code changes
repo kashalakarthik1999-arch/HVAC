@@ -1,5 +1,16 @@
 
 {
+  "name": "repair_recommendation",
+  "patterns": [
+    "(?i)recommendation to replace\\s+(.+?)\\s+in order to",
+    "(?i)recommendation to repair\\s+(.+?)\\s+in order to",
+    "(?i)It is our recommendation to replace\\s+(.+?)\\s+in order to",
+    "(?i)recommended repair\\s*:?\\s*(.+?)\\s+in order to",
+    "(?i)repair recommendation\\s*:?\\s*(.+?)\\s+in order to"
+  ]
+}
+
+{
   "name": "equipment_year",
   "patterns": [
     "\\bDate\\s+of\\s+Manufacture\\s*:\\s*((?:19|20)\\d{2})",
