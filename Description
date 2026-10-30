@@ -1,0 +1,42 @@
+| Column Name                          | Description                                                     |
+| ------------------------------------ | --------------------------------------------------------------- |
+| source_pdf                           | Original PDF file name or relative path                         |
+| claim_number                         | Insurance claim identification number                           |
+| hvaci_file_number                    | HVACi file number or iCheck number                              |
+| report_date                          | Date the HVACi report was generated                             |
+| date_of_loss                         | Date on which the loss occurred                                 |
+| insured_name                         | Name of the insured person                                      |
+| loss_address                         | Address where the loss occurred                                 |
+| company                              | Insurance company associated with the claim                     |
+| insured_stated_cause_of_loss         | Cause of loss reported by the insured                           |
+| cause_of_loss                        | Cause of loss identified by HVACi                               |
+| equipment_description                | Description of the HVAC equipment                               |
+| manufacturer                         | Equipment manufacturer                                          |
+| model_number                         | Equipment model number                                          |
+| serial_number                        | Equipment serial number                                         |
+| equipment_year                       | Year the equipment was manufactured                             |
+| equipment_age                        | Approximate age of the equipment                                |
+| failure_component                    | Component identified as failed or damaged                       |
+| findings                             | Inspection findings describing equipment damage                 |
+| system_recommendation                | Overall recommendation to repair or replace the HVAC system     |
+| recommended_action                   | Specific repair or replacement work recommended                 |
+| replacement_required                 | Indicates whether full HVAC system replacement is required      |
+| recommendation_details               | Explanation supporting the repair or replacement recommendation |
+| insured_quote_total                  | Total amount quoted by the insured's contractor                 |
+| market_pricing_total                 | Total HVACi market pricing or LKQ replacement cost              |
+| parts_cost                           | Total parts or material cost                                    |
+| labor_hours                          | Total estimated labor hours                                     |
+| labor_cost                           | Total estimated labor cost                                      |
+| recommended_cost_before_depreciation | Total recommended cost before depreciation                      |
+| depreciation                         | Amount deducted for depreciation                                |
+| recommended_acv_after_depreciation   | Actual cash value after depreciation                            |
+| pricing_variance                     | Difference between insured quote and market pricing             |
+| pricing_variance_percentage          | Percentage difference between insured quote and market pricing  |
+| sales_tax                            | Applicable sales tax                                            |
+| labor_rate                           | Estimated labor rate per hour                                   |
+| pages_processed                      | Total number of PDF pages processed                             |
+| source_page_numbers                  | PDF page numbers from which information was extracted           |
+| extraction_status                    | Overall extraction status (OK or REVIEW)                        |
+| missing_fields                       | Fields that could not be extracted                              |
+| warnings                             | Extraction or validation warnings                               |
+| extracted_text_file                  | Location of the extracted PDF text file                         |
