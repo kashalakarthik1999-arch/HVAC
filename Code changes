@@ -1,37 +1,3 @@
-for match in re.finditer(
-    r"Date",
-    full_text,
-    flags=re.IGNORECASE
-):
-    print("PDF TEXT:", repr(full_text[match.start():match.start()+100]))
-
-normalized_text = re.sub(r"\s+", " ", full_text)
-
-test = re.search(
-    r"Date\s+of\s+Manufacture\s*:?\s*((?:19|20)\d{2})",
-    normalized_text,
-    flags=re.IGNORECASE
-)
-
-print("Manufacture match:", test.group(1) if test else None)
-{
-  "name": "equipment_year",
-  "patterns": [
-    "\\bDate\\s+of\\s+Manufacture\\s*:?\\s*((?:19|20)\\d{2})",
-    "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
-  ]
-}
-
-{
-  "name": "repair_recommendation",
-  "patterns": [
-    "(?i)recommendation to replace\\s+(.+?)\\s+in order to",
-    "(?i)recommendation to repair\\s+(.+?)\\s+in order to",
-    "(?i)It is our recommendation to replace\\s+(.+?)\\s+in order to",
-    "(?i)recommended repair\\s*:?\\s*(.+?)\\s+in order to",
-    "(?i)repair recommendation\\s*:?\\s*(.+?)\\s+in order to"
-  ]
-}
 
 {
   "name": "equipment_year",
@@ -41,70 +7,15 @@ print("Manufacture match:", test.group(1) if test else None)
   ]
 }
 
-def extract_field(field_config, full_text):
+if field_config.get("name") == "equipment_year":
+    print("\nDEBUG EQUIPMENT YEAR")
+    print("Date found:", "Manufacture" in full_text)
 
-    field_name = field_config.get("name")
-    patterns = field_config.get("patterns", [])
+    test = re.search(
+        r"Date\s+of\s+Manufacture\s*:?\s*((?:19|20)\d{2})",
+        full_text,
+        re.IGNORECASE
+    )
 
-    if isinstance(patterns, str):
-        patterns = [patterns]
-
-    normalized_text = re.sub(r"\s+", " ", full_text)
-
-    texts_to_search = [full_text, normalized_text]
-
-    for pattern in patterns:
-        try:
-            for text in texts_to_search:
-
-                matches = re.finditer(
-                    pattern,
-                    text,
-                    flags=re.IGNORECASE
-                )
-
-                for match in matches:
-
-                    if match.lastindex:
-                        value = match.group(1)
-                    else:
-                        value = match.group(0)
-
-                    value = clean_value(value)
-
-                    if not value:
-                        continue
-
-                    # Specific validation for equipment model
-                    if field_name == "equipment_model":
-
-                        invalid_values = [
-                            "SERIAL",
-                            "SERIAL#",
-                            "S/N",
-                            "MODEL",
-                            "MODEL#"
-                        ]
-
-                        if value.upper() in invalid_values:
-                            continue
-
-                    return value
-
-        except re.error as error:
-            raise ValueError(
-                f"Invalid regex for field "
-                f"{field_name}: {error}"
-            )
-
-    return None
-
-
-{
-  "name": "equipment_model",
-  "patterns": [
-    "\\bModel\\s*:\\s*([A-Z0-9][A-Z0-9./-]{3,})",
-    "\\bMODEL\\s*#\\s*([A-Z0-9][A-Z0-9./-]{3,})",
-    "\\bModel\\s+(?:Number|No\\.?|#)\\s*:?\\s*([A-Z0-9][A-Z0-9./-]{3,})"
-  ]
-}
+    print("Direct regex result:",
+          test.group(1) if test else None)
