@@ -1,4 +1,19 @@
+if field_config.get("name") == "equipment_year":
 
+    print("\n========== EQUIPMENT YEAR DEBUG ==========")
+
+    for match in re.finditer(
+        r"manufact",
+        full_text,
+        re.IGNORECASE
+    ):
+        start = max(0, match.start() - 80)
+        end = min(len(full_text), match.start() + 150)
+
+        print("ACTUAL PDF TEXT:")
+        print(repr(full_text[start:end]))
+
+    print("==========================================")
 {
   "name": "equipment_year",
   "patterns": [
