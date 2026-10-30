@@ -1,0 +1,170 @@
+
+{
+  "fields": [
+    {
+      "name": "report_date",
+      "patterns": [
+        "\\bReport\\s*Date\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})"
+      ]
+    },
+    {
+      "name": "claim_number",
+      "patterns": [
+        "\\bClaim\\s*#\\s*:?\\s*([A-Z0-9-]+)",
+        "\\bClaim\\s*(?:Number|No\\.?)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "hvaci_file_number",
+      "patterns": [
+        "\\bHVACi\\s*File\\s*#\\s*:?\\s*([A-Z0-9-]+)",
+        "\\bHVACi\\s*File\\s*(?:Number|No\\.?)\\s*:?\\s*([A-Z0-9-]+)",
+        "\\biCHECK\\s*#\\s*:?\\s*([A-Z0-9-]+)",
+        "\\biCHECK\\s*(?:Number|No\\.?)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "manufacturer",
+      "patterns": [
+        "manufactured\\s+by\\s+([A-Za-z0-9][A-Za-z0-9 &.-]*?)(?=\\s+and\\s+is\\s+approximately|[.,;\\n])",
+        "\\bBrand\\s*:\\s*([^\\r\\n]+)",
+        "\\bManufacturer\\s*:\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "equipment_model",
+      "patterns": [
+        "\\bModel\\s*#\\s*:?\\s*([A-Z0-9-]+)",
+        "\\bModel\\s*(?:Number|No\\.?)\\s*:?\\s*([A-Z0-9-]+)"
+      ]
+    },
+    {
+      "name": "equipment_age_years",
+      "patterns": [
+        "approximately\\s+(\\d+)\\s+years?\\s+old"
+      ]
+    },
+    {
+      "name": "equipment_year",
+      "patterns": [
+        "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
+      ]
+    },
+    {
+      "name": "equipment_description",
+      "patterns": [
+        "(?:Line Item Description|DESCRIPTION)\\s*\\n\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "insured_stated_cause_of_loss",
+      "patterns": [
+        "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:?\\s*([^\\r\\n]+)",
+        "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:?\\s*\\n\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "cause_of_loss",
+      "patterns": [
+        "cause of loss to the HVAC System is\\s+([^\\.\\r\\n]+)",
+        "\\bCause\\s*of\\s*Loss\\s*:?\\s*([^\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "failure_component",
+      "patterns": [
+        "discovered a failed\\s+([^\\.\\r\\n]+)",
+        "failed component\\s*:?\\s*([^\\.\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "recommended_action",
+      "patterns": [
+        "HVACi recommends that the HVAC system be\\s+(repaired|replaced)",
+        "recommend(?:ation)?\\s+to\\s+(repair|replace)\\s+the HVAC system"
+      ]
+    },
+    {
+      "name": "repair_recommendation",
+      "patterns": [
+        "recommendation to replace\\s+([^\\.\\r\\n]+)",
+        "recommendation to repair\\s+([^\\.\\r\\n]+)",
+        "It is our recommendation to replace\\s+([^\\.\\r\\n]+)",
+        "recommended repair\\s*:?\\s*([^\\.\\r\\n]+)",
+        "repair recommendation\\s*:?\\s*([^\\.\\r\\n]+)"
+      ]
+    },
+    {
+      "name": "full_replacement_required",
+      "patterns": [
+        "full replacement of the HVAC system is\\s+(not required|required)",
+        "full replacement\\s+(is|is not)\\s+(required|necessary)"
+      ]
+    },
+    {
+      "name": "lkq_certification",
+      "patterns": [
+        "HVACi certifies the estimate as\\s+([^\\.\\r\\n]+)",
+        "HVACi certifies the quote as\\s+([^\\.\\r\\n]+)",
+        "contractor['’]?s quote is\\s+(like,?\\s+kind\\s+and\\s+quality)"
+      ]
+    },
+    {
+      "name": "coverage_status",
+      "patterns": [
+        "(If coverage is afforded)"
+      ]
+    },
+    {
+      "name": "repair_cost",
+      "patterns": [
+        "Total Recommended Repair Cost\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})",
+        "Total Repair Cost\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "replacement_cost",
+      "patterns": [
+        "Total Replacement Cost\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})",
+        "Market Pricing Total\\s*:\\s*\\$?([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "insured_quote_total",
+      "patterns": [
+        "Quote Total\\s*:\\s*\\$?([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "repair_parts_cost",
+      "patterns": [
+        "System Total\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})\\s+[\\d.]+\\s+\\$?[\\d,]+\\.\\d{2}\\s+\\$?([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "repair_labor_hours",
+      "patterns": [
+        "System Total\\s*:?\\s*\\$?[\\d,]+\\.\\d{2}\\s+([\\d.]+)\\s+\\$?[\\d,]+\\.\\d{2}\\s+\\$?[\\d,]+\\.\\d{2}"
+      ]
+    },
+    {
+      "name": "repair_labor_cost",
+      "patterns": [
+        "System Total\\s*:?\\s*\\$?[\\d,]+\\.\\d{2}\\s+[\\d.]+\\s+\\$?([\\d,]+\\.\\d{2})\\s+\\$?[\\d,]+\\.\\d{2}"
+      ]
+    },
+    {
+      "name": "depreciation",
+      "patterns": [
+        "\\bDepreciation\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})"
+      ]
+    },
+    {
+      "name": "recommended_acv",
+      "patterns": [
+        "\\bRecommended\\s*ACV\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})",
+        "\\bActual\\s*Cash\\s*Value\\s*:?\\s*\\$?([\\d,]+\\.\\d{2})"
+      ]
+    }
+  ]
+}
