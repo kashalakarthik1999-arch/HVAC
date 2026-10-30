@@ -1,1 +1,42 @@
 
+
+def extract_field(field_config, full_text):
+
+    patterns = field_config.get("patterns", [])
+
+    if isinstance(patterns, str):
+        patterns = [patterns]
+
+    # Normalize spaces and line breaks in extracted PDF text
+    normalized_text = re.sub(r"\s+", " ", full_text)
+
+    # Search original text first, then normalized text
+    texts_to_search = [full_text, normalized_text]
+
+    for pattern in patterns:
+        try:
+            for text in texts_to_search:
+
+                match = re.search(
+                    pattern,
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                if match:
+                    # Return first captured group if available
+                    if match.lastindex:
+                        value = match.group(1)
+                    else:
+                        value = match.group(0)
+
+                    if value and value.strip():
+                        return clean_value(value)
+
+        except re.error as error:
+            raise ValueError(
+                f"Invalid regex for field "
+                f"{field_config.get('name')}: {error}"
+            )
+
+    return None
