@@ -1,47 +1,19 @@
+
 {
   "name": "insured_stated_cause_of_loss",
   "patterns": [
-    "Insured'?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:?\\s*([^\\r\\n]+)"
+    "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:\\s*(Unknown|Lightning|Wind|Hail|Wear\\s+and\\s+Tear|Power\\s+Surge|High\\s+Voltage\\s+Surge)",
+    "Insured['’]?s\\s+Stated\\s+Cause\\s+of\\s+Loss\\s*:\\s*([^\\r\\n]+)"
   ]
 }
 
-def extract_field(field_config, full_text):
+print("\n--- DEBUG: CLAIM INFORMATION ---")
 
-    patterns = field_config.get("patterns", [])
+pos = full_text.lower().find("stated")
 
-    if isinstance(patterns, str):
-        patterns = [patterns]
+if pos != -1:
+    print(repr(full_text[max(0, pos - 100):pos + 350]))
+else:
+    print("The word 'Stated' was not found.")
 
-    # Normalize spaces and line breaks in extracted PDF text
-    normalized_text = re.sub(r"\s+", " ", full_text)
-
-    # Search original text first, then normalized text
-    texts_to_search = [full_text, normalized_text]
-
-    for pattern in patterns:
-        try:
-            for text in texts_to_search:
-
-                match = re.search(
-                    pattern,
-                    text,
-                    flags=re.IGNORECASE
-                )
-
-                if match:
-                    # Return first captured group if available
-                    if match.lastindex:
-                        value = match.group(1)
-                    else:
-                        value = match.group(0)
-
-                    if value and value.strip():
-                        return clean_value(value)
-
-        except re.error as error:
-            raise ValueError(
-                f"Invalid regex for field "
-                f"{field_config.get('name')}: {error}"
-            )
-
-    return None
+print("--- END DEBUG ---\n")
