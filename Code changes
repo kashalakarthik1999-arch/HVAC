@@ -1,4 +1,16 @@
 
+{
+  "name": "equipment_year",
+  "patterns": [
+    "Manufacture\\s*:\\s*((?:19|20)\\d{2})",
+    "Date\\s+of\\s+Manufacture\\s*:?\\s*((?:19|20)\\d{2})",
+    "Age\\s*:\\s*((?:19|20)\\d{2})"
+  ]
+}
+
+
+
+
 
 {
   "name": "equipment_year",
