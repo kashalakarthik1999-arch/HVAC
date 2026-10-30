@@ -1,3 +1,17 @@
+
+
+{
+  "name": "equipment_year",
+  "patterns": [
+    "\\bManufacture\\s*:\\s*((?:19|20)\\d{2})",
+    "\\bDate\\s+of\\s+Manufacture\\s*:?\\s*((?:19|20)\\d{2})",
+    "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
+  ]
+}
+
+
+
+
 if field_config.get("name") == "equipment_year":
 
     print("\n========== EQUIPMENT YEAR DEBUG ==========")
