@@ -1,26 +1,68 @@
 
+def extract_field(field_config, full_text):
+
+    field_name = field_config.get("name")
+    patterns = field_config.get("patterns", [])
+
+    if isinstance(patterns, str):
+        patterns = [patterns]
+
+    normalized_text = re.sub(r"\s+", " ", full_text)
+
+    texts_to_search = [full_text, normalized_text]
+
+    for pattern in patterns:
+        try:
+            for text in texts_to_search:
+
+                matches = re.finditer(
+                    pattern,
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                for match in matches:
+
+                    if match.lastindex:
+                        value = match.group(1)
+                    else:
+                        value = match.group(0)
+
+                    value = clean_value(value)
+
+                    if not value:
+                        continue
+
+                    # Specific validation for equipment model
+                    if field_name == "equipment_model":
+
+                        invalid_values = [
+                            "SERIAL",
+                            "SERIAL#",
+                            "S/N",
+                            "MODEL",
+                            "MODEL#"
+                        ]
+
+                        if value.upper() in invalid_values:
+                            continue
+
+                    return value
+
+        except re.error as error:
+            raise ValueError(
+                f"Invalid regex for field "
+                f"{field_name}: {error}"
+            )
+
+    return None
+
+
 {
-  "name": "insured_stated_cause_of_loss",
+  "name": "equipment_model",
   "patterns": [
-    "Insured['’]?s\\s+Stated\\s+(?:Cause\\s+of\\s+Loss\\s*)?:?\\s*(Mechanical\\s+Breakdown|Unknown|Lightning|Wind|Hail|Wear\\s+and\\s+Tear|Power\\s+Surge|High\\s+Voltage\\s+Surge)"
+    "\\bModel\\s*:\\s*([A-Z0-9][A-Z0-9./-]{3,})",
+    "\\bMODEL\\s*#\\s*([A-Z0-9][A-Z0-9./-]{3,})",
+    "\\bModel\\s+(?:Number|No\\.?|#)\\s*:?\\s*([A-Z0-9][A-Z0-9./-]{3,})"
   ]
 }
-
-
-
-
-# DEBUG: Search for insured cause-of-loss information
-
-print("\n--- DEBUG: CAUSE OF LOSS ---")
-
-for record in page_records:
-
-    page_text = record["text"]
-
-    if any(word in page_text.lower()
-           for word in ["insured", "cause", "unknown", "stated"]):
-
-        print(f"\nPAGE NUMBER: {record['page_number']}")
-        print(repr(page_text[:2000]))
-
-print("\n--- END DEBUG ---\n")
