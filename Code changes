@@ -1,4 +1,12 @@
 
+{
+  "name": "equipment_year",
+  "patterns": [
+    "\\bDate\\s+of\\s+Manufacture\\s*:\\s*((?:19|20)\\d{2})",
+    "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
+  ]
+}
+
 def extract_field(field_config, full_text):
 
     field_name = field_config.get("name")
