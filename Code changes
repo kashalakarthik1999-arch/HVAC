@@ -1,3 +1,10 @@
+for match in re.finditer(
+    r"Date",
+    full_text,
+    flags=re.IGNORECASE
+):
+    print("PDF TEXT:", repr(full_text[match.start():match.start()+100]))
+
 normalized_text = re.sub(r"\s+", " ", full_text)
 
 test = re.search(
