@@ -1,4 +1,15 @@
 
+print("\n--- DATE OF LOSS DEBUG ---")
+
+pos = full_text.lower().find("date")
+
+if pos != -1:
+    print(repr(full_text[pos:pos + 250]))
+else:
+    print("Date label not found")
+
+print("--- END DEBUG ---\n")
+
 {
   "name": "date_of_loss",
   "patterns": [
