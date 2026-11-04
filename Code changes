@@ -1,3 +1,13 @@
+
+{
+  "name": "date_of_loss",
+  "patterns": [
+    "Date\\s*of\\s*Loss\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})"
+  ]
+}
+
+
+
 {
   "name": "date_of_loss",
   "patterns": [
