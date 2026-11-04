@@ -1,3 +1,12 @@
+{
+  "name": "date_of_loss",
+  "patterns": [
+    "Date\\s+of\\s+Loss\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})",
+    "Date\\s+of\\b[\\s\\S]{0,150}?(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})[\\s\\S]{0,10}?Loss\\s*:"
+  ]
+}
+
+
 
 print("\n--- DATE OF LOSS DEBUG ---")
 
