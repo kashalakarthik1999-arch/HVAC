@@ -1,3 +1,13 @@
+/* Creating Number of Passengers for Production Data */
+
+if compress(NumberofPassengersGroup) = '1-12' then
+    NumberofPassengers_num = 12;
+else if compress(NumberofPassengersGroup) = '13-60' then
+    NumberofPassengers_num = 60;
+else if compress(NumberofPassengersGroup) = '61+' then
+    NumberofPassengers_num = 61;
+else NumberofPassengers_num = .;
+
 {
   "name": "date_of_loss",
   "patterns": [
