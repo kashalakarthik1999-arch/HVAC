@@ -1,36 +1,3 @@
-except Exception as error:
-
-    # Continue processing other PDFs if one fails
-    pdf_results = [{
-        "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
-        "pages_processed": None
-    }]
-
-    for field_config in fields:
-        pdf_results[0][field_config["name"]] = None
-
-    qa = {
-        "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
-        "status": "FAILED",
-        "missing_fields": ", ".join(
-            field["name"] for field in fields
-        ),
-        "warnings": str(error),
-        "extracted_text_file": None
-    }
-
-
-
-{
-  "name": "manufacturer",
-  "patterns": [
-    "manufactured\\s+by\\s+([A-Za-z0-9][A-Za-z0-9 &.-]*?)(?=\\s+and\\s+is|\\s+is\\s+|\\n|$)",
-    "\\bBrand\\s*:\\s*([^\\r\\n]+)",
-    "\\bManufacturer\\s*:\\s*([^\\r\\n]+)",
-    "\\bMake\\s*:\\s*([^\\r\\n]+)"
-  ]
-}
-
 def extract_equipment_table(pdf_path):
 
     equipment_rows = []
@@ -51,6 +18,7 @@ def extract_equipment_table(pdf_path):
 
                 header_index = None
 
+                # Identify only the HVAC equipment table
                 for i, row in enumerate(data):
 
                     headers = [
@@ -64,12 +32,14 @@ def extract_equipment_table(pdf_path):
 
                     if (
                         "brand" in headers
-                        and any("model" in h for h in headers)
+                        and "model" in headers
+                        and "serial" in headers
                         and "age" in headers
                     ):
                         header_index = i
                         break
 
+                # Ignore unrelated tables
                 if header_index is None:
                     continue
 
@@ -89,25 +59,38 @@ def extract_equipment_table(pdf_path):
                     if header == "brand":
                         column_map["manufacturer"] = index
 
-                    elif "model" in header:
+                    elif header == "model":
                         column_map["equipment_model"] = index
 
-                    elif "serial" in header:
+                    elif header == "serial":
                         column_map["serial_number"] = index
 
                     elif header == "age":
                         column_map["equipment_age"] = index
 
-                    elif "systemtype" in header:
-                        column_map["system_type"] = index
-
-                    elif "causeofloss" in header:
+                    elif header == "causeofloss":
                         column_map["equipment_cause_of_loss"] = index
 
-                    elif "recommendation" in header:
+                    elif header == "tonbtu":
+                        column_map["ton_btu"] = index
+
+                    elif header == "systemtype":
+                        column_map["system_type"] = index
+
+                    elif header == "recommendation":
                         column_map["equipment_recommendation"] = index
 
+                # Process only actual equipment rows
                 for row in data[header_index + 1:]:
+
+                    if not row:
+                        continue
+
+                    # First column should contain equipment ID: 001, 002, etc.
+                    equipment_id = str(row[0] or "").strip()
+
+                    if not re.fullmatch(r"\d{3}", equipment_id):
+                        continue
 
                     record = {}
 
@@ -118,38 +101,15 @@ def extract_equipment_table(pdf_path):
                                 row[index] or ""
                             ).strip()
 
-                    # Ignore empty rows
-                    if record.get("manufacturer") or record.get("equipment_model"):
-                        equipment_rows.append(record)
+                    # Manufacturer must be present
+                    if not record.get("manufacturer"):
+                        continue
+
+                    record["equipment_id"] = equipment_id
+
+                    equipment_rows.append(record)
 
     finally:
         doc.close()
 
     return equipment_rows
-
-
-
-    # Check whether this PDF contains an equipment table
-    equipment_rows = extract_equipment_table(pdf_path)
-
-    if equipment_rows:
-
-        final_results = []
-
-        for equipment in equipment_rows:
-
-            record = result.copy()
-            record.update(equipment)
-
-            final_results.append(record)
-
-        return final_results, qa
-
-    # Type 1: retain the existing single-record extraction
-    return [result], qa
-
-
-pdf_results, qa = process_pdf(pdf_file, fields)
-
-results.extend(pdf_results)
-
