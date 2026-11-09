@@ -1,3 +1,26 @@
+except Exception as error:
+
+    # Continue processing other PDFs if one fails
+    pdf_results = [{
+        "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
+        "pages_processed": None
+    }]
+
+    for field_config in fields:
+        pdf_results[0][field_config["name"]] = None
+
+    qa = {
+        "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
+        "status": "FAILED",
+        "missing_fields": ", ".join(
+            field["name"] for field in fields
+        ),
+        "warnings": str(error),
+        "extracted_text_file": None
+    }
+
+
+
 {
   "name": "manufacturer",
   "patterns": [
