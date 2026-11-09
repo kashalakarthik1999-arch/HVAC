@@ -11,3 +11,4 @@ print("--- END DEBUG ---")
     "\\bMake\\s*:\\s*(?:of\\s*)?([A-Za-z][A-Za-z0-9& .'-]*?)(?=Manufacture\\s*:|\\s*\\r?\\n|$)"
   ]
 }
+"\\bMake\\s*:\\s*([A-Za-z][A-Za-z0-9& .'-]*)\\s*(?=\\r?\\n|$)"
