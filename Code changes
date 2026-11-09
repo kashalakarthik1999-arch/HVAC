@@ -1,108 +1,132 @@
-/* Creating Number of Passengers for Production Data */
-
-if compress(NumberofPassengersGroup) = '1-12' then
-    NumberofPassengers_num = 12;
-else if compress(NumberofPassengersGroup) = '13-60' then
-    NumberofPassengers_num = 60;
-else if compress(NumberofPassengersGroup) = '61+' then
-    NumberofPassengers_num = 61;
-else NumberofPassengers_num = .;
-
 {
-  "name": "date_of_loss",
+  "name": "manufacturer",
   "patterns": [
-    "Date\\s+of\\s+Loss\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})",
-    "Date\\s+of\\b[\\s\\S]{0,150}?(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})[\\s\\S]{0,10}?Loss\\s*:"
+    "manufactured\\s+by\\s+([A-Za-z0-9][A-Za-z0-9 &.-]*?)(?=\\s+and\\s+is|\\s+is\\s+|\\n|$)",
+    "\\bBrand\\s*:\\s*([^\\r\\n]+)",
+    "\\bManufacturer\\s*:\\s*([^\\r\\n]+)",
+    "\\bMake\\s*:\\s*([^\\r\\n]+)"
   ]
 }
 
+def extract_equipment_table(pdf_path):
+
+    equipment_rows = []
+
+    doc = fitz.open(pdf_path)
+
+    try:
+        for page in doc:
+
+            tables = page.find_tables()
+
+            for table in tables.tables:
+
+                data = table.extract()
+
+                if not data:
+                    continue
+
+                header_index = None
+
+                for i, row in enumerate(data):
+
+                    headers = [
+                        re.sub(
+                            r"[^a-z0-9]",
+                            "",
+                            str(cell or "").lower()
+                        )
+                        for cell in row
+                    ]
+
+                    if (
+                        "brand" in headers
+                        and any("model" in h for h in headers)
+                        and "age" in headers
+                    ):
+                        header_index = i
+                        break
+
+                if header_index is None:
+                    continue
+
+                headers = [
+                    re.sub(
+                        r"[^a-z0-9]",
+                        "",
+                        str(cell or "").lower()
+                    )
+                    for cell in data[header_index]
+                ]
+
+                column_map = {}
+
+                for index, header in enumerate(headers):
+
+                    if header == "brand":
+                        column_map["manufacturer"] = index
+
+                    elif "model" in header:
+                        column_map["equipment_model"] = index
+
+                    elif "serial" in header:
+                        column_map["serial_number"] = index
+
+                    elif header == "age":
+                        column_map["equipment_age"] = index
+
+                    elif "systemtype" in header:
+                        column_map["system_type"] = index
+
+                    elif "causeofloss" in header:
+                        column_map["equipment_cause_of_loss"] = index
+
+                    elif "recommendation" in header:
+                        column_map["equipment_recommendation"] = index
+
+                for row in data[header_index + 1:]:
+
+                    record = {}
+
+                    for field, index in column_map.items():
+
+                        if index < len(row):
+                            record[field] = str(
+                                row[index] or ""
+                            ).strip()
+
+                    # Ignore empty rows
+                    if record.get("manufacturer") or record.get("equipment_model"):
+                        equipment_rows.append(record)
+
+    finally:
+        doc.close()
+
+    return equipment_rows
 
 
-print("\n--- DATE OF LOSS DEBUG ---")
 
-pos = full_text.lower().find("date")
+    # Check whether this PDF contains an equipment table
+    equipment_rows = extract_equipment_table(pdf_path)
 
-if pos != -1:
-    print(repr(full_text[pos:pos + 250]))
-else:
-    print("Date label not found")
+    if equipment_rows:
 
-print("--- END DEBUG ---\n")
+        final_results = []
 
-{
-  "name": "date_of_loss",
-  "patterns": [
-    "Date\\s*of\\s*Loss\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})"
-  ]
-}
+        for equipment in equipment_rows:
 
+            record = result.copy()
+            record.update(equipment)
 
+            final_results.append(record)
 
-{
-  "name": "date_of_loss",
-  "patterns": [
-    "Date\\s+of\\s+Loss\\s*:?\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{4})"
-  ]
-}
+        return final_results, qa
 
-{
-  "name": "equipment_year",
-  "patterns": [
-    "Manufacture\\s*:\\s*((?:19|20)\\d{2})",
-    "Date\\s+of\\s+Manufacture\\s*:?\\s*((?:19|20)\\d{2})",
-    "Age\\s*:\\s*((?:19|20)\\d{2})"
-  ]
-}
+    # Type 1: retain the existing single-record extraction
+    return [result], qa
 
 
+pdf_results, qa = process_pdf(pdf_file, fields)
 
+results.extend(pdf_results)
 
-
-{
-  "name": "equipment_year",
-  "patterns": [
-    "\\bManufacture\\s*:\\s*((?:19|20)\\d{2})",
-    "\\bDate\\s+of\\s+Manufacture\\s*:?\\s*((?:19|20)\\d{2})",
-    "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
-  ]
-}
-
-
-
-
-if field_config.get("name") == "equipment_year":
-
-    print("\n========== EQUIPMENT YEAR DEBUG ==========")
-
-    for match in re.finditer(
-        r"manufact",
-        full_text,
-        re.IGNORECASE
-    ):
-        start = max(0, match.start() - 80)
-        end = min(len(full_text), match.start() + 150)
-
-        print("ACTUAL PDF TEXT:")
-        print(repr(full_text[start:end]))
-
-    print("==========================================")
-{
-  "name": "equipment_year",
-  "patterns": [
-    "\\bDate\\s+of\\s+Manufacture\\s*:\\s*((?:19|20)\\d{2})",
-    "\\bAge\\s*:\\s*((?:19|20)\\d{2})"
-  ]
-}
-
-if field_config.get("name") == "equipment_year":
-    print("\nDEBUG EQUIPMENT YEAR")
-    print("Date found:", "Manufacture" in full_text)
-
-    test = re.search(
-        r"Date\s+of\s+Manufacture\s*:?\s*((?:19|20)\d{2})",
-        full_text,
-        re.IGNORECASE
-    )
-
-    print("Direct regex result:",
-          test.group(1) if test else None)
