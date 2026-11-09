@@ -5,3 +5,20 @@
     "\\bMake\\s*:\\s*([A-Za-z][A-Za-z0-9& .'-]*?)(?=\\s+Model\\s*:|\\r?\\n|$)"
   ]
 }
+
+# Type 1: Do not extract another column when Brand is blank.
+if field_name == "manufacturer":
+    type1_table = (
+        "Existing HVAC Equipment Demographic Information" in full_text
+        and re.search(r"\bBRAND\b.*\bMODEL\b", full_text, re.IGNORECASE | re.DOTALL)
+    )
+
+    if type1_table:
+        blank_brand = re.search(
+            r"\b00[1-9]\s+UNAVAILABLE\s+UNAVAILABLE\b",
+            full_text,
+            re.IGNORECASE
+        )
+
+        if blank_brand:
+            return None
