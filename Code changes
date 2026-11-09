@@ -1,6 +1,7 @@
 {
   "name": "manufacturer",
   "patterns": [
-    "\\bMake\\s*:\\s*(?:of)?([A-Za-z][A-Za-z0-9& .'-]*?)(?=Manufacture\\s*:|Model\\s*:|\\r?\\n|$)"
+    "\\bMake\\s*:\\s*(?:of)?\\s*([A-Za-z][A-Za-z0-9& .'-]*?)(?=Manufacture\\s*:)",
+    "\\bMake\\s*:\\s*([A-Za-z][A-Za-z0-9& .'-]*?)(?=\\s+Model\\s*:|\\r?\\n|$)"
   ]
 }
