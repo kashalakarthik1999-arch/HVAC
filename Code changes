@@ -1,14 +1,6 @@
-print("\n--- MANUFACTURER DEBUG ---")
-
-for match in re.finditer(r"Make", full_text, re.IGNORECASE):
-    print(repr(full_text[match.start():match.start() + 100]))
-
-print("--- END DEBUG ---")
-
 {
   "name": "manufacturer",
   "patterns": [
-    "\\bMake\\s*:\\s*(?:of\\s*)?([A-Za-z][A-Za-z0-9& .'-]*?)(?=Manufacture\\s*:|\\s*\\r?\\n|$)"
+    "\\bMake\\s*:\\s*(?:of)?([A-Za-z][A-Za-z0-9& .'-]*?)(?=Manufacture\\s*:|Model\\s*:|\\r?\\n|$)"
   ]
 }
-"\\bMake\\s*:\\s*([A-Za-z][A-Za-z0-9& .'-]*)\\s*(?=\\r?\\n|$)"
