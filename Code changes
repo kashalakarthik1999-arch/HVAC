@@ -7,3 +7,7 @@
     "restore\\s+pre[-\\s]?loss\\s+condition\\s*:?\\s*([A-Za-z][A-Za-z0-9&.' -]*?)(?=\\s*,)"
   ]
 }
+
+"patterns": [
+  "restore\\s+pre[-\\s]?loss\\s+condition\\s*:\\s*[\\s\\r\\n]*[•●▪·*-]?\\s*([A-Za-z][A-Za-z0-9&.' -]*?)\\s*,"
+]
