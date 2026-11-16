@@ -2,59 +2,8 @@
 
 
 
-def extract_manufacturer_from_determinations(full_text):
-
-    # Find the Determinations section
-    section_match = re.search(
-        r"Determinations(.*?)(?=\n\s*(?:Conclusion|Attachments|Appendix)\b|\Z)",
-        full_text,
-        re.IGNORECASE | re.DOTALL
-    )
-
-    if not section_match:
-        return None
-
-    section_text = section_match.group(1)
-
-    # Find the line describing the equipment required
-    preloss_match = re.search(
-        r"restore\s+pre[-\s]?loss\s+condition\s*:?\s*(.*)",
-        section_text,
-        re.IGNORECASE | re.DOTALL
-    )
-
-    if not preloss_match:
-        return None
-
-    equipment_text = preloss_match.group(1)
-
-    # Find the first bullet item
-    first_item = re.search(
-        r"(?:^|\n)\s*[•●▪\-]\s*(.+)",
-        equipment_text
-    )
-
-    if not first_item:
-        return None
-
-    description = first_item.group(1).strip()
-
-    # Manufacturer is assumed to be the first text before a comma
-    manufacturer = re.match(
-        r"([A-Za-z][A-Za-z0-9&.' -]*?)\s*,",
-        description
-    )
-
-    if manufacturer:
-        return manufacturer.group(1).strip()
-
-    return None
-
-
-
-
-if field_name == "manufacturer":
-    value = extract_manufacturer_from_determinations(full_text)
-
-    if value:
-        return value
+"manufacturer": {
+  "patterns": [
+    "restore\\s+pre[-\\s]?loss\\s+condition\\s*:?\\s*([A-Za-z][A-Za-z0-9&.' -]*?)(?=\\s*,)"
+  ]
+}
