@@ -1,97 +1,60 @@
+"\\bAge\\s*:\\s*(\\d{4})\\b"
 
-def extract_type2_equipment(full_text):
 
-    import re
 
-    equipment_records = []
+def extract_manufacturer_from_determinations(full_text):
 
-    # Split at each numbered equipment section
-    sections = re.split(
-        r'(?=\b\d{2}\s*Date\s*Make\s*:)',
+    # Find the Determinations section
+    section_match = re.search(
+        r"Determinations(.*?)(?=\n\s*(?:Conclusion|Attachments|Appendix)\b|\Z)",
         full_text,
-        flags=re.IGNORECASE
+        re.IGNORECASE | re.DOTALL
     )
 
-    for section in sections:
+    if not section_match:
+        return None
 
-        number_match = re.search(
-            r'\b(\d{2})\s*Date\s*Make\s*:',
-            section,
-            re.IGNORECASE
-        )
+    section_text = section_match.group(1)
 
-        if not number_match:
-            continue
+    # Find the line describing the equipment required
+    preloss_match = re.search(
+        r"restore\s+pre[-\s]?loss\s+condition\s*:?\s*(.*)",
+        section_text,
+        re.IGNORECASE | re.DOTALL
+    )
 
-        manufacturer_match = re.search(
-            r'Date\s*Make\s*:\s*of\s*(.*?)\s*Manufacture\s*:',
-            section,
-            re.IGNORECASE
-        )
+    if not preloss_match:
+        return None
 
-        year_match = re.search(
-            r'Manufacture\s*:\s*(\d{4})\b',
-            section,
-            re.IGNORECASE
-        )
+    equipment_text = preloss_match.group(1)
 
-        model_match = re.search(
-            r'\bModel\s*:\s*([A-Za-z0-9./_-]+)',
-            section,
-            re.IGNORECASE
-        )
+    # Find the first bullet item
+    first_item = re.search(
+        r"(?:^|\n)\s*[•●▪\-]\s*(.+)",
+        equipment_text
+    )
 
-        equipment_records.append({
-            "equipment_number": number_match.group(1),
-            "manufacturer": (
-                manufacturer_match.group(1).strip()
-                if manufacturer_match else None
-            ),
-            "equipment_year": (
-                int(year_match.group(1))
-                if year_match else None
-            ),
-            "equipment_model": (
-                model_match.group(1).strip()
-                if model_match else None
-            )
-        })
+    if not first_item:
+        return None
 
-    return equipment_records
+    description = first_item.group(1).strip()
+
+    # Manufacturer is assumed to be the first text before a comma
+    manufacturer = re.match(
+        r"([A-Za-z][A-Za-z0-9&.' -]*?)\s*,",
+        description
+    )
+
+    if manufacturer:
+        return manufacturer.group(1).strip()
+
+    return None
 
 
 
 
+if field_name == "manufacturer":
+    value = extract_manufacturer_from_determinations(full_text)
 
-# Type 1: Equipment table extraction
-equipment_rows = extract_equipment_table(pdf_path)
-
-if equipment_rows:
-
-    final_results = []
-
-    for equipment in equipment_rows:
-        record = result.copy()
-        record.update(equipment)
-        final_results.append(record)
-
-    return final_results, qa
-
-
-# Type 2: Numbered equipment extraction
-type2_equipment = extract_type2_equipment(full_text)
-
-if type2_equipment:
-
-    final_results = []
-
-    for equipment in type2_equipment:
-        record = result.copy()
-        record.update(equipment)
-        final_results.append(record)
-
-    return final_results, qa
-
-
-# Default extraction when no equipment sections are found
-return [result], qa
+    if value:
+        return value
