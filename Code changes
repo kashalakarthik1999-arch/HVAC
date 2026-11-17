@@ -1,18 +1,21 @@
 # Extract first line-item description from Insured's Quote
 
 insured_description_match = re.search(
-    r"Insured['’]?s\s+Quote\s*"
+    r"V?\s*Insured['’]?s\s+Quote"
     r".*?LINE\s+ITEM\s+DESCRIPTION"
-    r".*?\n\s*"
+    r".*?W/TAX\s+COST\s+"
     r"([A-Za-z][A-Za-z0-9&.,'()/ _-]*?)"
-    r"\s+(?=\$[\d,]+\.\d{2})",
+    r"\s+\$[\d,]+\.\d{2}",
     insured_text,
     re.IGNORECASE | re.DOTALL
 )
 
 if insured_description_match:
+
     description = insured_description_match.group(1).strip()
 
     costs["insured_quoted_manufacturer"] = description
+
 else:
+
     costs["insured_quoted_manufacturer"] = None
