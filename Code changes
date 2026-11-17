@@ -1,136 +1,18 @@
+# Extract first line-item description from Insured's Quote
 
-def extract_type2_cost_summary(section):
+insured_description_match = re.search(
+    r"Insured['’]?s\s+Quote\s*"
+    r".*?LINE\s+ITEM\s+DESCRIPTION"
+    r".*?\n\s*"
+    r"([A-Za-z][A-Za-z0-9&.,'()/ _-]*?)"
+    r"\s+(?=\$[\d,]+\.\d{2})",
+    insured_text,
+    re.IGNORECASE | re.DOTALL
+)
 
-    # Keep original line breaks for description extraction
-    original_text = section
+if insured_description_match:
+    description = insured_description_match.group(1).strip()
 
-    # Normalize whitespace for total extraction
-    text = re.sub(r"\s+", " ", section)
-
-    costs = {
-        "insured_quote_total": None,
-        "insured_market_parts_cost": None,
-        "insured_labour_cost": None,
-        "insured_market_pricing_total": None,
-        "insured_quoted_manufacturer": None,
-        "market_pricing_description": None
-    }
-
-    # ------------------------------------------------
-    # 1. INSURED'S QUOTE SECTION
-    # ------------------------------------------------
-
-    insured_match = re.search(
-        r"Insured[’']s\s+Quote(.*?)(?=iCheck\s+Market\s+Pricing|$)",
-        text,
-        re.IGNORECASE
-    )
-
-    if insured_match:
-
-        insured_text = insured_match.group(1)
-
-        # Extract Quote Total
-        quote_total_match = re.search(
-            r"Quote\s+Total\s*:?\s*\$?\s*([\d,]+\.\d{2})",
-            insured_text,
-            re.IGNORECASE
-        )
-
-        if quote_total_match:
-            costs["insured_quote_total"] = float(
-                quote_total_match.group(1).replace(",", "")
-            )
-
-        # Extract first line-item description
-        insured_description_match = re.search(
-            r"([A-Za-z][A-Za-z0-9&.,'()/ -]*?)\s+"
-            r"\$[\d,]+\.\d{2}\s+"
-            r"\$[\d,]+\.\d{2}\s+"
-            r"\$[\d,]+\.\d{2}",
-            insured_text,
-            re.IGNORECASE
-        )
-
-        if insured_description_match:
-
-            description = insured_description_match.group(1).strip()
-
-            if not re.search(
-                r"System\s+Total|Line\s+Item|Description",
-                description,
-                re.IGNORECASE
-            ):
-                costs["insured_quoted_manufacturer"] = description
-
-    # ------------------------------------------------
-    # 2. ICHECK MARKET PRICING SECTION
-    # ------------------------------------------------
-
-    market_match = re.search(
-        r"iCheck\s+Market\s+Pricing(.*)",
-        text,
-        re.IGNORECASE
-    )
-
-    if market_match:
-
-        market_text = market_match.group(1)
-
-        # Extract System Total: Parts Cost and Labor Cost
-        system_total_match = re.search(
-            r"System\s+Total\s*:?\s*"
-            r"\$?\s*([\d,]+\.\d{2})\s+"
-            r"[\d,.]+\s+"
-            r"\$?\s*([\d,]+\.\d{2})",
-            market_text,
-            re.IGNORECASE
-        )
-
-        if system_total_match:
-
-            costs["insured_market_parts_cost"] = float(
-                system_total_match.group(1).replace(",", "")
-            )
-
-            costs["insured_labour_cost"] = float(
-                system_total_match.group(2).replace(",", "")
-            )
-
-        # Extract Market Pricing Total
-        market_total_match = re.search(
-            r"Market\s+Pricing\s+Total\s*:?\s*"
-            r"\$?\s*([\d,]+\.\d{2})",
-            market_text,
-            re.IGNORECASE
-        )
-
-        if market_total_match:
-
-            costs["insured_market_pricing_total"] = float(
-                market_total_match.group(1).replace(",", "")
-            )
-
-        # Extract first line-item description from iCheck table
-        market_description_match = re.search(
-            r"LINE\s+ITEM\s+LABOR\s+LINE\s+ITEM\s+DESCRIPTION"
-            r".*?"
-            r"([A-Za-z][A-Za-z0-9&.,'()/ -]*?)\s+"
-            r"\$[\d,]+\.\d{2}\s+"
-            r"[\d.]+\s+"
-            r"\$[\d,]+\.\d{2}\s+"
-            r"\$[\d,]+\.\d{2}",
-            market_text,
-            re.IGNORECASE
-        )
-
-        if market_description_match:
-
-            costs["market_pricing_description"] = (
-                market_description_match.group(1).strip()
-            )
-
-    return costs
-
-
-cost_summary = extract_type2_cost_summary(section)
+    costs["insured_quoted_manufacturer"] = description
+else:
+    costs["insured_quoted_manufacturer"] = None
