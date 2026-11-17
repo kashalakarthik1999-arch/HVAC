@@ -1,8 +1,29 @@
-insured_description_match = re.search(
-    r"LINE\s+ITEM\s+DESCRIPTION.*?"
-    r"W/TAX\s+COST.*?\n\s*"
-    r"([A-Za-z0-9][A-Za-z0-9&.,'()/ _-]*?)"
-    r"\s+(?=\$[\d,]+\.\d{2})",
-    insured_text,
-    re.IGNORECASE | re.DOTALL
-)
+def detect_pdf_type(full_text):
+
+    # Type 2: Existing HVAC Equipment Demographic Information
+    if re.search(
+        r"Existing\s+HVAC\s+Equipment\s+Demographic\s+Information",
+        full_text,
+        re.IGNORECASE
+    ):
+        return "Type 2"
+
+    # Type 1: Insured's Quote
+    elif re.search(
+        r"Insured['’]s\s+Quote",
+        full_text,
+        re.IGNORECASE
+    ):
+        return "Type 1"
+
+    else:
+        return "Unknown"
+
+
+pdf_type = detect_pdf_type(full_text)
+
+result = {
+    "source_pdf": os.path.basename(pdf_path),
+    "pages_processed": page_count,
+    "pdf_type": pdf_type
+}
