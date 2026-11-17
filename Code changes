@@ -1,18 +1,23 @@
 
 def extract_type2_cost_summary(section):
 
-    # Normalize whitespace and line breaks
+    # Keep original line breaks for description extraction
+    original_text = section
+
+    # Normalize whitespace for total extraction
     text = re.sub(r"\s+", " ", section)
 
     costs = {
         "insured_quote_total": None,
         "insured_market_parts_cost": None,
         "insured_labour_cost": None,
-        "insured_market_pricing_total": None
+        "insured_market_pricing_total": None,
+        "insured_quoted_manufacturer": None,
+        "market_pricing_description": None
     }
 
     # ------------------------------------------------
-    # 1. INSURED'S QUOTE TOTAL
+    # 1. INSURED'S QUOTE SECTION
     # ------------------------------------------------
 
     insured_match = re.search(
@@ -23,20 +28,43 @@ def extract_type2_cost_summary(section):
 
     if insured_match:
 
+        insured_text = insured_match.group(1)
+
+        # Extract Quote Total
         quote_total_match = re.search(
             r"Quote\s+Total\s*:?\s*\$?\s*([\d,]+\.\d{2})",
-            insured_match.group(1),
+            insured_text,
             re.IGNORECASE
         )
 
         if quote_total_match:
-
             costs["insured_quote_total"] = float(
                 quote_total_match.group(1).replace(",", "")
             )
 
+        # Extract first line-item description
+        insured_description_match = re.search(
+            r"([A-Za-z][A-Za-z0-9&.,'()/ -]*?)\s+"
+            r"\$[\d,]+\.\d{2}\s+"
+            r"\$[\d,]+\.\d{2}\s+"
+            r"\$[\d,]+\.\d{2}",
+            insured_text,
+            re.IGNORECASE
+        )
+
+        if insured_description_match:
+
+            description = insured_description_match.group(1).strip()
+
+            if not re.search(
+                r"System\s+Total|Line\s+Item|Description",
+                description,
+                re.IGNORECASE
+            ):
+                costs["insured_quoted_manufacturer"] = description
+
     # ------------------------------------------------
-    # 2. ICHECK MARKET PRICING
+    # 2. ICHECK MARKET PRICING SECTION
     # ------------------------------------------------
 
     market_match = re.search(
@@ -49,9 +77,7 @@ def extract_type2_cost_summary(section):
 
         market_text = market_match.group(1)
 
-        # Extract System Total row:
-        # Parts Cost | Labor Hours | Labor Cost | Line Item Total
-
+        # Extract System Total: Parts Cost and Labor Cost
         system_total_match = re.search(
             r"System\s+Total\s*:?\s*"
             r"\$?\s*([\d,]+\.\d{2})\s+"
@@ -71,8 +97,7 @@ def extract_type2_cost_summary(section):
                 system_total_match.group(2).replace(",", "")
             )
 
-        # Extract Market Pricing Total below the table
-
+        # Extract Market Pricing Total
         market_total_match = re.search(
             r"Market\s+Pricing\s+Total\s*:?\s*"
             r"\$?\s*([\d,]+\.\d{2})",
@@ -86,8 +111,26 @@ def extract_type2_cost_summary(section):
                 market_total_match.group(1).replace(",", "")
             )
 
+        # Extract first line-item description from iCheck table
+        market_description_match = re.search(
+            r"LINE\s+ITEM\s+LABOR\s+LINE\s+ITEM\s+DESCRIPTION"
+            r".*?"
+            r"([A-Za-z][A-Za-z0-9&.,'()/ -]*?)\s+"
+            r"\$[\d,]+\.\d{2}\s+"
+            r"[\d.]+\s+"
+            r"\$[\d,]+\.\d{2}\s+"
+            r"\$[\d,]+\.\d{2}",
+            market_text,
+            re.IGNORECASE
+        )
+
+        if market_description_match:
+
+            costs["market_pricing_description"] = (
+                market_description_match.group(1).strip()
+            )
+
     return costs
 
 
-# Extract cost summary for the current equipment section
 cost_summary = extract_type2_cost_summary(section)
