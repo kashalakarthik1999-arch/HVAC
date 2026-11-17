@@ -1,3 +1,13 @@
+{
+    "name": "insured_stated_cause_of_loss",
+    "patterns": [
+        "Insured['’]?s\\s+Stated\\s+(.+?)\\s+Recommended"
+    ]
+}
+
+
+
+
 # Extract first line-item description from Insured's Quote
 
 insured_description_match = re.search(
