@@ -1,29 +1,21 @@
+
 def detect_pdf_type(full_text):
 
-    # Type 2: Existing HVAC Equipment Demographic Information
+    # Type 2: On-site Assessment Report
     if re.search(
-        r"Existing\s+HVAC\s+Equipment\s+Demographic\s+Information",
+        r"ON[\s-]+SITE\s+ASSESSMENT\s+REPORT",
         full_text,
         re.IGNORECASE
     ):
-        return "Type 2"
+        return "ON-SITE ASSESSMENT REPORT"
 
-    # Type 1: Insured's Quote
+    # Type 1: Desktop Review Report
     elif re.search(
-        r"Insured['’]s\s+Quote",
+        r"DESKTOP\s+REVIEW\s+REPORT",
         full_text,
         re.IGNORECASE
     ):
-        return "Type 1"
+        return "DESKTOP REVIEW REPORT"
 
     else:
         return "Unknown"
-
-
-pdf_type = detect_pdf_type(full_text)
-
-result = {
-    "source_pdf": os.path.basename(pdf_path),
-    "pages_processed": page_count,
-    "pdf_type": pdf_type
-}
