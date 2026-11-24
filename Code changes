@@ -1,21 +1,15 @@
+# Calculate Unit Age
+if "date_of_loss" in data_df.columns and "equipment_year" in data_df.columns:
+    loss_year = pd.to_datetime(
+        data_df["date_of_loss"],
+        errors="coerce"
+    ).dt.year
 
-def detect_pdf_type(full_text):
+    equipment_year = pd.to_numeric(
+        data_df["equipment_year"],
+        errors="coerce"
+    )
 
-    # Type 2: On-site Assessment Report
-    if re.search(
-        r"ON[\s-]+SITE\s+ASSESSMENT\s+REPORT",
-        full_text,
-        re.IGNORECASE
-    ):
-        return "ON-SITE ASSESSMENT REPORT"
-
-    # Type 1: Desktop Review Report
-    elif re.search(
-        r"DESKTOP\s+REVIEW\s+REPORT",
-        full_text,
-        re.IGNORECASE
-    ):
-        return "DESKTOP REVIEW REPORT"
-
-    else:
-        return "Unknown"
+    data_df["unit_age"] = loss_year - equipment_year
+else:
+    data_df["unit_age"] = None
