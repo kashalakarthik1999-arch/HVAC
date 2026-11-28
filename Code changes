@@ -1,7 +1,7 @@
-# Type 2: On-site Assessment Report
-if re.search(
-    r"\bON[\s-]*SITE\s+ASSESSMENT\s+REPORT\b",
-    full_text,
-    re.IGNORECASE
-):
-    return "ON-SITE ASSESSMENT REPORT"
+# Type 3: HVAC Market Pricing Report
+    if re.search(
+        r"\bHVAC\s+MARKET\s+PRICING\s+REPORT\b",
+        full_text,
+        re.IGNORECASE
+    ):
+        return "HVAC MARKET PRICING REPORT"
