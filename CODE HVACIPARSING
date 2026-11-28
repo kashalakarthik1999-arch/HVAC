@@ -1,0 +1,868 @@
+import json
+import re
+from pathlib import Path
+
+import fitz
+import pandas as pd
+
+
+# ============================================================
+# 1. CONFIGURATION
+# ============================================================
+
+BASE_DIR = OUTPUT_DIR = Path(r"C:/Users/XG676/OneDrive - Erie Insurance/Documents/HVACi Project")
+
+INPUT_DIR = BASE_DIR / "inputsa"
+OUTPUT_DIR = BASE_DIR / "outputsa"
+RULES_FILE = BASE_DIR / "extraction_rules.json"
+
+INPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+EXCEL_FILE = OUTPUT_DIR / "hvaci_extracted_data.xlsx"
+TEXT_DIR = OUTPUT_DIR / "extracted_text"
+
+# Try OCR when a page contains very little text.
+OCR_THRESHOLD = 40
+
+# True means search input subfolders as well.
+INCLUDE_SUBFOLDERS = True
+
+
+# ============================================================
+# 2. READ USER-DEFINED EXTRACTION RULES
+# ============================================================
+
+def load_rules():
+    if not RULES_FILE.exists():
+        raise FileNotFoundError(
+            f"Rules file not found: {RULES_FILE}"
+        )
+
+    with open(RULES_FILE, "r", encoding="utf-8") as file:
+        config = json.load(file)
+
+    fields = config.get("fields", [])
+
+    if not fields:
+        raise ValueError(
+            "No extraction fields found in extraction_rules.json"
+        )
+
+    names = [field.get("name") for field in fields]
+
+    if any(not name for name in names):
+        raise ValueError(
+            "Every configured field must have a non-empty name."
+        )
+
+    if len(names) != len(set(names)):
+        raise ValueError(
+            "Each configured field name must be unique."
+        )
+
+    return fields
+
+
+# ============================================================
+# 3. EXTRACT TEXT FROM A PDF
+# ============================================================
+
+def extract_pdf_text(pdf_path):
+    page_texts = []
+    warnings = []
+
+    with fitz.open(pdf_path) as document:
+        page_count = len(document)
+
+        for page_index, page in enumerate(document):
+            page_number = page_index + 1
+
+            text = page.get_text("text", sort=True)
+            method = "Text extraction"
+
+            # OCR fallback for scanned or image-heavy pages.
+            if len(text.strip()) < OCR_THRESHOLD:
+                try:
+                    text_page = page.get_textpage_ocr(
+                        language="eng",
+                        dpi=200,
+                        full=True
+                    )
+
+                    ocr_text = page.get_text(
+                        "text",
+                        textpage=text_page,
+                        sort=True
+                    )
+
+                    if len(ocr_text.strip()) > len(text.strip()):
+                        text = ocr_text
+                        method = "OCR"
+
+                except Exception as error:
+                    warnings.append(
+                        f"Page {page_number}: OCR failed or is "
+                        f"not installed: {error}"
+                    )
+
+            text = text.replace("\xa0", " ")
+            text = re.sub(r"[ \t]+", " ", text)
+            text = text.strip()
+
+            if not text:
+                warnings.append(
+                    f"Page {page_number}: no text extracted."
+                )
+
+            page_texts.append({
+                "page_number": page_number,
+                "method": method,
+                "text": text
+            })
+
+    return page_count, page_texts, warnings
+
+
+# ============================================================
+# 4. EXTRACT A FIELD USING REGEX OR KEYWORDS
+# ============================================================
+
+def extract_field(field_config, full_text):
+
+    field_name = field_config.get("name")
+    # Type 1: Do not extract another column when Brand is blank.
+    if field_name == "manufacturer":
+        type1_table = (
+            "Existing HVAC Equipment Demographic Information" in full_text
+            and re.search(r"\bBRAND\b.*\bMODEL\b", full_text, re.IGNORECASE | re.DOTALL)
+        )
+
+        if type1_table:
+            blank_brand = re.search(
+                r"\b00[1-9]\s+UNAVAILABLE\s+UNAVAILABLE\b",
+                full_text,
+                re.IGNORECASE
+            )
+        #     print("Yes,ITS WORKING")
+        #     if blank_brand:
+        #         return None
+    patterns = field_config.get("patterns", [])
+        
+    if isinstance(patterns, str):
+        patterns = [patterns]
+
+    normalized_text = re.sub(r"\s+", " ", full_text)
+
+    texts_to_search = [full_text, normalized_text]
+
+    for pattern in patterns:
+        try:
+            for text in texts_to_search:
+
+                matches = re.finditer(
+                    pattern,
+                    text,
+                    flags=re.IGNORECASE
+                )
+
+                for match in matches:
+
+                    if match.lastindex:
+                        value = match.group(1)
+                    else:
+                        value = match.group(0)
+
+                    value = clean_value(value)
+
+                    if not value:
+                        continue
+
+                    # Specific validation for equipment model
+                    if field_name == "equipment_model":
+
+                        invalid_values = [
+                            "SERIAL",
+                            "SERIAL#",
+                            "S/N",
+                            "MODEL",
+                            "MODEL #",
+                            "MODEL#"
+                        ]
+
+                        if value.upper() in invalid_values:
+                            continue
+
+                    return value
+
+        except re.error as error:
+            raise ValueError(
+                f"Invalid regex for field "
+                f"{field_name}: {error}"
+            )
+
+    return None
+
+# Type 2 Insured Quote columns Extraction
+def extract_type2_cost_summary(section):
+
+    # Keep original line breaks for description extraction
+    original_text = section
+
+    # Normalize whitespace for total extraction
+    text = re.sub(r"\s+", " ", section)
+
+    costs = {
+        "insured_quoted_manufacturer": None,
+        "insured_quote_total": None,
+        "insured_market_parts_cost": None,
+        "insured_market_labour_cost": None,
+        "insured_market_pricing_total": None,
+    }
+
+    # ------------------------------------------------
+    # 1. INSURED'S QUOTE SECTION
+    # ------------------------------------------------
+
+    insured_match = re.search(
+        r"Insured[’']s\s+Quote(.*?)(?=iCheck\s+Market\s+Pricing|$)",
+        text,
+        re.IGNORECASE
+    )
+
+    if insured_match:
+
+        insured_text = insured_match.group(1)
+
+        # Extract Quote Total
+        quote_total_match = re.search(
+            r"Quote\s+Total\s*:?\s*\$?\s*([\d,]+\.\d{2})",
+            insured_text,
+            re.IGNORECASE
+        )
+
+        if quote_total_match:
+            costs["insured_quote_total"] = float(
+                quote_total_match.group(1).replace(",", "")
+            )
+
+        # Extract first line-item description from Insured Quote table
+
+        insured_description_match = re.search(
+            r"V?\s*Insured['’]?s\s+Quote"
+            r".*?LINE\s+ITEM\s+DESCRIPTION"
+            r".*?W/TAX\s+COST\s+"
+            r"([A-Za-z0-9][A-Za-z0-9&.,'()/ _-]*?)"
+            r"\s+\$[\d,]+\.\d{2}",
+            insured_text,
+            re.IGNORECASE | re.DOTALL
+        )
+
+        if insured_description_match:
+
+            description = insured_description_match.group(1).strip()
+
+            costs["insured_quoted_manufacturer"] = description
+
+        else:
+
+            costs["insured_quoted_manufacturer"] = None
+
+    # ------------------------------------------------
+    # 2. ICHECK MARKET PRICING SECTION
+    # ------------------------------------------------
+
+    market_match = re.search(
+        r"iCheck\s+Market\s+Pricing(.*)",
+        text,
+        re.IGNORECASE
+    )
+
+    if market_match:
+
+        market_text = market_match.group(1)
+
+        # Extract System Total: Parts Cost and Labor Cost
+        system_total_match = re.search(
+            r"System\s+Total\s*:?\s*"
+            r"\$?\s*([\d,]+\.\d{2})\s+"
+            r"[\d,.]+\s+"
+            r"\$?\s*([\d,]+\.\d{2})",
+            market_text,
+            re.IGNORECASE
+        )
+
+        if system_total_match:
+
+            costs["insured_market_parts_cost"] = float(
+                system_total_match.group(1).replace(",", "")
+            )
+
+            costs["insured_market_labour_cost"] = float(
+                system_total_match.group(2).replace(",", "")
+            )
+
+        # Extract Market Pricing Total
+        market_total_match = re.search(
+            r"Market\s+Pricing\s+Total\s*:?\s*"
+            r"\$?\s*([\d,]+\.\d{2})",
+            market_text,
+            re.IGNORECASE
+        )
+
+        if market_total_match:
+
+            costs["insured_market_pricing_total"] = float(
+                market_total_match.group(1).replace(",", "")
+            )
+
+        # Extract first line-item description from iCheck table
+        # market_description_match = re.search(
+        #     r"LINE\s+ITEM\s+LABOR\s+LINE\s+ITEM\s+DESCRIPTION"
+        #     r".*?"
+        #     r"([A-Za-z][A-Za-z0-9&.,'()/ -]*?)\s+"
+        #     r"\$[\d,]+\.\d{2}\s+"
+        #     r"[\d.]+\s+"
+        #     r"\$[\d,]+\.\d{2}\s+"
+        #     r"\$[\d,]+\.\d{2}",
+        #     market_text,
+        #     re.IGNORECASE
+        # )
+
+        # if market_description_match:
+
+        #     costs["market_pricing_description"] = (
+        #         market_description_match.group(1).strip()
+        #     )
+
+    return costs
+
+def extract_type2_equipment(full_text):
+
+    import re
+
+    equipment_records = []
+
+    # Split at each numbered equipment section
+    sections = re.split(
+        r'(?=\b\d{2}\s*Date\s*Make\s*:)',
+        full_text,
+        flags=re.IGNORECASE
+    )
+
+    for section in sections:
+
+        number_match = re.search(
+            r'\b(\d{2})\s*Date\s*Make\s*:',
+            section,
+            re.IGNORECASE
+        )
+
+        if not number_match:
+            continue
+
+        manufacturer_match = re.search(
+            r'Date\s*Make\s*:\s*of\s*(.*?)\s*Manufacture\s*:',
+            section,
+            re.IGNORECASE
+        )
+
+        year_match = re.search(
+            r'Manufacture\s*:\s*(\d{4})\b',
+            section,
+            re.IGNORECASE
+        )
+
+        model_match = re.search(
+            r'\bModel\s*:\s*([A-Za-z0-9./_-]+)',
+            section,
+            re.IGNORECASE
+        )
+
+        #cost columns extraction
+        cost_summary = extract_type2_cost_summary(section)
+
+        equipment_records.append({
+            "equipment_number": number_match.group(1),
+            "manufacturer": (
+                manufacturer_match.group(1).strip()
+                if manufacturer_match else None
+            ),
+            "equipment_year": (
+                int(year_match.group(1))
+                if year_match else None
+            ),
+            "equipment_model": (
+                model_match.group(1).strip()
+                if model_match else None
+            ),
+
+            **cost_summary
+        })
+
+    return equipment_records
+
+
+def clean_value(value):
+    value = str(value).strip()
+    value = re.sub(r"\s+", " ", value)
+
+    return value if value else None
+
+
+# ============================================================
+# 5. FIND ALL PDFs
+# ============================================================
+
+def find_pdfs():
+    if not INPUT_DIR.exists():
+        raise FileNotFoundError(
+            f"Input folder does not exist: {INPUT_DIR}"
+        )
+
+    if INCLUDE_SUBFOLDERS:
+        pdf_files = INPUT_DIR.rglob("*")
+    else:
+        pdf_files = INPUT_DIR.glob("*")
+
+    return sorted(
+        path for path in pdf_files
+        if path.is_file() and path.suffix.lower() == ".pdf"
+    )
+
+def extract_equipment_table(pdf_path):
+
+    equipment_rows = []
+
+    doc = fitz.open(pdf_path)
+
+    try:
+        for page in doc:
+
+            tables = page.find_tables()
+
+            for table in tables.tables:
+
+                data = table.extract()
+
+                if not data:
+                    continue
+
+                header_index = None
+
+                # Identify only the HVAC equipment table
+                for i, row in enumerate(data):
+
+                    headers = [
+                        re.sub(
+                            r"[^a-z0-9]",
+                            "",
+                            str(cell or "").lower()
+                        )
+                        for cell in row
+                    ]
+
+                    if (
+                        "brand" in headers
+                        and "model" in headers
+                        and "serial" in headers
+                        and "age" in headers
+                    ):
+                        header_index = i
+                        break
+
+                # Ignore unrelated tables
+                if header_index is None:
+                    continue
+
+                headers = [
+                    re.sub(
+                        r"[^a-z0-9]",
+                        "",
+                        str(cell or "").lower()
+                    )
+                    for cell in data[header_index]
+                ]
+
+                column_map = {}
+
+                for index, header in enumerate(headers):
+
+                    if header == "brand":
+                        column_map["manufacturer"] = index
+
+                    elif header == "model":
+                        column_map["equipment_model"] = index
+
+                    elif header == "age":
+                        column_map["equipment_year"] = index
+
+                    elif header == "causeofloss":
+                        column_map["equipment_cause_of_loss"] = index
+
+                    elif header == "recommendation":
+                        column_map["equipment_recommendation"] = index
+
+                # Process only actual equipment rows
+                for row in data[header_index + 1:]:
+
+                    if not row:
+                        continue
+
+                    # First column should contain equipment ID: 001, 002, etc.
+                    equipment_id = str(row[0] or "").strip()
+
+                    if not re.fullmatch(r"\d{3}", equipment_id):
+                        continue
+
+                    record = {}
+
+                    for field, index in column_map.items():
+
+                        if index < len(row):
+                            record[field] = str(
+                                row[index] or ""
+                            ).strip()
+
+                    # Manufacturer must be present
+                    if not record.get("manufacturer"):
+                        continue
+
+                    record["equipment_id"] = equipment_id
+
+                    equipment_rows.append(record)
+
+    finally:
+        doc.close()
+
+    return equipment_rows
+
+#Creating column that identifies type of pdf and creates a new column
+def detect_pdf_type(full_text):
+
+    # Type 2: On-site Assessment Report
+    if re.search(
+        r"ON[\s-]+SITE\s+ASSESSMENT\s+REPORT",
+        full_text,
+        re.IGNORECASE
+    ):
+        return "ON-SITE ASSESSMENT REPORT"
+
+    # Type 1: Desktop Review Report
+    elif re.search(
+        r"DESKTOP\s+REVIEW\s+REPORT",
+        full_text,
+        re.IGNORECASE
+    ):
+        return "DESKTOP REVIEW REPORT"
+
+    else:
+        return "Unknown"
+
+    
+# ============================================================
+# 6. PROCESS ONE PDF
+# ============================================================
+
+def process_pdf(pdf_path, fields):
+    page_count, page_records, warnings = extract_pdf_text(
+        pdf_path
+    )
+
+    full_text = "\n\n".join(
+        f"--- PAGE {record['page_number']} ---\n"
+        f"{record['text']}"
+        for record in page_records
+    )
+
+    # print("\n--- MANUFACTURER DEBUG ---")
+
+    # for match in re.finditer(r"Make", full_text, re.IGNORECASE):
+    #     print(repr(full_text[match.start():match.start() + 100]))
+
+    # print("--- END DEBUG ---")
+
+    pdf_type = detect_pdf_type(full_text)
+
+    result = {
+        "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
+        "pages_processed": page_count,
+        "Report_type":pdf_type
+    }
+
+    missing_fields = []
+
+    # Each configured field automatically becomes an Excel column.
+    for field_config in fields:
+        field_name = field_config["name"]
+
+        try:
+            value = extract_field(field_config, full_text)
+        except Exception as error:
+            value = None
+            warnings.append(str(error))
+
+        result[field_name] = value
+
+        if value is None:
+            missing_fields.append(field_name)
+
+    # Save extracted text separately for troubleshooting.
+    TEXT_DIR.mkdir(parents=True, exist_ok=True)
+
+    relative_path = pdf_path.relative_to(INPUT_DIR)
+    text_filename = "__".join(relative_path.parts)
+    text_filename = re.sub(
+        r'[<>:"/\\|?*]',
+        "_",
+        text_filename
+    )
+
+    text_path = TEXT_DIR / f"{text_filename}.txt"
+
+    text_path.write_text(
+        full_text,
+        encoding="utf-8"
+    )
+
+    # Record quality checks.
+    qa = {
+        "source_pdf": str(relative_path),
+        "status": (
+            "REVIEW" if missing_fields or warnings else "OK"
+        ),
+        "missing_fields": ", ".join(missing_fields),
+        "warnings": " | ".join(warnings),
+        "extracted_text_file": str(text_path)
+    }
+    
+# Type 1: Equipment table extraction
+    equipment_rows = extract_equipment_table(pdf_path)
+
+    if equipment_rows:
+
+        final_results = []
+
+        for equipment in equipment_rows:
+            record = result.copy()
+            record.update(equipment)
+            final_results.append(record)
+
+        return final_results, qa
+
+
+    # Type 2: Numbered equipment extraction
+    type2_equipment = extract_type2_equipment(full_text)
+
+    if type2_equipment:
+
+        final_results = []
+
+        for equipment in type2_equipment:
+            record = result.copy()
+            record.update(equipment)
+            final_results.append(record)
+
+        return final_results, qa
+
+    return [result], qa
+
+
+# ============================================================
+# 7. EXPORT RESULTS TO EXCEL
+# ============================================================
+
+def save_excel(results, qa_results):
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    data_df = pd.DataFrame(results)
+    qa_df = pd.DataFrame(qa_results)
+
+    # Convert numerical columns to numeric data types
+    numeric_columns = [
+        "equipment_year",
+        "equipment_age",
+        "unit_age",
+        "repair_cost",
+        "replacement_cost",
+        "insured_quote_total",
+        "insured_market_pricing_total",
+        "insured_market_parts_cost",
+        "insured_market_labour_cost"
+    ]
+
+    for col in numeric_columns:
+        if col in data_df.columns:
+            data_df[col] = pd.to_numeric(
+                data_df[col].astype(str).str.replace(r"[$,]", "", regex=True),
+                errors="coerce"
+            )
+
+    # Calculate Unit Age
+    if "date_of_loss" in data_df.columns and "equipment_year" in data_df.columns:
+        loss_year = pd.to_datetime(
+            data_df["date_of_loss"],
+            errors="coerce"
+        ).dt.year
+
+        equipment_year = pd.to_numeric(
+            data_df["equipment_year"],
+            errors="coerce"
+        )
+
+        data_df["unit_age"] = loss_year - equipment_year
+    else:
+        data_df["unit_age"] = None            
+
+    with pd.ExcelWriter(
+        EXCEL_FILE,
+        engine="openpyxl"
+    ) as writer:
+
+        data_df.to_excel(
+            writer,
+            sheet_name="Extracted_Data",
+            index=False
+        )
+
+        qa_df.to_excel(
+            writer,
+            sheet_name="QA_Log",
+            index=False
+        )
+
+        for worksheet in writer.book.worksheets:
+            worksheet.freeze_panes = "A2"
+            worksheet.auto_filter.ref = worksheet.dimensions
+
+            if worksheet.title == "Extracted_Data":
+
+                currency_columns = [
+                    "repair_cost",
+                    "replacement_cost",
+                    "insured_quote_total",
+                    "insured_market_pricing_total",
+                    "insured_market_parts_cost",
+                    "insured_market_labour_cost"
+                ]
+
+                headers = {
+                    cell.value: cell.column
+                    for cell in worksheet[1]
+                }
+
+                for col_name in currency_columns:
+                    if col_name in headers:
+                        col_num = headers[col_name]
+
+                        for row in range(2, worksheet.max_row + 1):
+                            worksheet.cell(row=row, column=col_num).number_format = '$#,##0.00'
+
+            # Keep long text columns readable.
+            for cells in worksheet.columns:
+                header = str(cells[0].value or "")
+                column_letter = cells[0].column_letter
+
+                if header in [
+                    "warnings",
+                    "missing_fields",
+                    "extracted_text_file"
+                ]:
+                    width = 45
+                else:
+                    max_length = max(
+                        len(str(cell.value or ""))
+                        for cell in cells
+                    )
+                    width = min(max(max_length + 2, 14), 35)
+
+                worksheet.column_dimensions[
+                    column_letter
+                ].width = width
+
+    print(f"\nExcel workbook created:\n{EXCEL_FILE}")
+
+
+# ============================================================
+# 8. MAIN PROGRAM
+# ============================================================
+
+def main():
+    INPUT_DIR.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    fields = load_rules()
+    pdf_files = find_pdfs()
+
+    if not pdf_files:
+        print(f"No PDF files found in:\n{INPUT_DIR}")
+        print("Place your PDFs in the input folder and try again.")
+        return
+
+    print(f"PDFs found: {len(pdf_files)}")
+    print(f"Configured columns: {len(fields)}")
+    print("Starting extraction...\n")
+
+    results = []
+    qa_results = []
+
+    for index, pdf_path in enumerate(pdf_files, start=1):
+        print(
+            f"[{index}/{len(pdf_files)}] "
+            f"Processing: {pdf_path.name}"
+        )
+
+        try:
+            pdf_results, qa = process_pdf(pdf_path, fields)
+
+        except Exception as error:
+
+            # Continue processing other PDFs if one fails
+            pdf_results = [{
+                "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
+                "pages_processed": None
+            }]
+
+            for field_config in fields:
+                pdf_results[0][field_config["name"]] = None
+
+            qa = {
+                "source_pdf": str(pdf_path.relative_to(INPUT_DIR)),
+                "status": "FAILED",
+                "missing_fields": ", ".join(
+                    field["name"] for field in fields
+                ),
+                "warnings": str(error),
+                "extracted_text_file": None
+            }
+
+        results.extend(pdf_results)
+        qa_results.append(qa)
+
+    save_excel(results, qa_results)
+
+    successful = sum(
+        1 for row in qa_results
+        if row["status"] != "FAILED"
+    )
+
+    failed = sum(
+        1 for row in qa_results
+        if row["status"] == "FAILED"
+    )
+
+    review = sum(
+        1 for row in qa_results
+        if row["status"] == "REVIEW"
+    )
+
+    print("\n========== SUMMARY ==========")
+    print(f"PDFs found:       {len(pdf_files)}")
+    print(f"Processed:        {successful}")
+    print(f"Failed:           {failed}")
+    print(f"Needs review:     {review}")
+    print(f"Excel output:     {EXCEL_FILE}")
+
+
+if __name__ == "__main__":
+    main()
