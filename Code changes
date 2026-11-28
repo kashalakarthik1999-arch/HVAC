@@ -1,7 +1,7 @@
-# Type 3: HVAC Market Pricing Report
-    if re.search(
-        r"\bHVAC\s+MARKET\s+PRICING\s+REPORT\b",
-        full_text,
-        re.IGNORECASE
-    ):
-        return "HVAC MARKET PRICING REPORT"
+{
+    "name": "report_date",
+    "patterns": [
+        "\\bReport\\s+(\\d{1,2}/\\d{1,2}/\\d{4})\\s+Date\\s+of\\s+Loss\\b",
+        "\\bReport\\s*Date\\s*:?\\s*(\\d{1,2}[-/]\\d{1,2}[-/]\\d{4})"
+    ]
+}
