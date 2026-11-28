@@ -1,15 +1,12 @@
-# Calculate Unit Age
-if "date_of_loss" in data_df.columns and "equipment_year" in data_df.columns:
-    loss_year = pd.to_datetime(
-        data_df["date_of_loss"],
-        errors="coerce"
-    ).dt.year
+text = page.get_text("text", sort=True)
 
-    equipment_year = pd.to_numeric(
-        data_df["equipment_year"],
-        errors="coerce"
-    )
+print(f"\nPage: {page_number}")
+print(f"Normal extraction characters: {len(text.strip())}")
+print(f"OCR threshold: {OCR_THRESHOLD}")
 
-    data_df["unit_age"] = loss_year - equipment_year
-else:
-    data_df["unit_age"] = None
+
+
+print(f"OCR extraction characters: {len(ocr_text.strip())}")
+
+
+print(f"OCR ERROR on page {page_number}: {error}")
