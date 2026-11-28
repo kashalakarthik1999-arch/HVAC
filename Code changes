@@ -1,12 +1,7 @@
-text = page.get_text("text", sort=True)
-
-print(f"\nPage: {page_number}")
-print(f"Normal extraction characters: {len(text.strip())}")
-print(f"OCR threshold: {OCR_THRESHOLD}")
-
-
-
-print(f"OCR extraction characters: {len(ocr_text.strip())}")
-
-
-print(f"OCR ERROR on page {page_number}: {error}")
+# Type 2: On-site Assessment Report
+if re.search(
+    r"\bON[\s-]*SITE\s+ASSESSMENT\s+REPORT\b",
+    full_text,
+    re.IGNORECASE
+):
+    return "ON-SITE ASSESSMENT REPORT"
